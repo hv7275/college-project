@@ -1,22 +1,25 @@
 {% extends "base.html" %} {% block title %}Task List{% endblock %} {% block
 content %}
 <div class="task-box">
-  <h2>Your Task</h2>
+  <h2>Your Tasks</h2>
   <form action="{{url_for("tasks.add_task")}}" method="POST" class="task-form">
     <input type="text" name="title" id="title" placeholder="Enter task title" required />
     <button type="submit">Add Task</button>
 
   </form>
   {% if tasks %}
-  <form action="{{url_for('tasks.clear_task', task_id=task.id)}}" method='POST' class="clear-task-form">
-    <button type="submit" class='btn-btn-clear'>Clear Tasks</button>
+  <form action="{{url_for('tasks.clear_all_tasks')}}" method='POST' class="clear-task-form">
+    <button type="submit" class='btn-btn-clear'>Clear All Tasks</button>
   </form>
 
   <table class="tasks-table">
     <thead>
-        <tr>Task</tr>
-        <tr>Status</tr>
-        <tr>Change</tr>
+        <tr>
+            <th>#</th>
+            <th>Task</th>
+            <th>Status</th>
+            <th>Action</th>
+        </tr>
     </thead>
     <tbody>
         {% for task in tasks %}
@@ -24,11 +27,11 @@ content %}
           <td>{{loop.index}}</td>
           <td>{{ task.title }}</td>
           <td>
-            <span class="badge {{ task.status|lower }}">{{ task.status }}</span>
+            <span class="badge {{ task.status|lower|replace(' ', '-') }}">{{ task.status }}</span>
           </td>
           <td>
-            <form action="{{url_for('tasks.toggle_task')}}" method='POST'>
-              
+            <form action="{{url_for('tasks.toggle_task')}}" method='POST' style="display: inline;">
+              <input type="hidden" name="task_id" value="{{ task.id }}">
               <button type="submit" class="btn-small">Next</button>
             </form>
           </td>

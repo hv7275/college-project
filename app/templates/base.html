@@ -1,39 +1,159 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{% block title %}todo-app{% endblock %}</title>
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/style.css') }}"
-    />
-  </head>
-  <body>
-    <header>
-      <div class="container">
-        <h1>My Todo-App</h1>
-        <nav>
-          <a href="{{ url_for('tasks.view_task')}}">Home</a>
-          {% if 'user' in session%}
-          <a href="{{ url_for('auth.logout')}}">Logout</a>
-          {% else %}
-          <a href="{{url_for('auth.login')}}">Login</a>
-          {% endif %}
-        </nav>
-      </div>
-    </header>
 
-    <main class="container">
-      {% with messages = get_flashed_messages(with_categories=True) %} {% for
-      category, message in messages %}
-      <div class="flash {{ category }}">{{ message }}</div>
-      {% endfor %} {%endwith%} {% block content %}{% endblock %}
-    </main>
-    <footer>
-      <div class="container">
-        <p>&copy; 2023 My Todo-App</p>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Todo App{% endblock %}</title>
+  <link rel="stylesheet"
+    href="{{ url_for('static', filename='css/style.css') }}{% if cache_buster %}?v={{ cache_buster }}{% endif %}" />
+</head>
+
+<body>
+  <header>
+    <div class="container">
+      <h1><a href="{{ url_for('tasks.view_task')}}">My Todo-App</a></h1>
+      <nav>
+        <a href="{{ url_for('tasks.view_task')}}">Home</a>
+        {% if 'user' in session %}
+        <a href="{{ url_for('auth.logout')}}">Logout</a>
+        {% else %}
+        <a href="{{ url_for('auth.login')}}">Login</a>
+        <a href="{{ url_for('auth.register')}}">Register</a>
+        {% endif %}
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Flash messages -->
+    {% with messages = get_flashed_messages(with_categories=True) %}
+    {% if messages %}
+    {% for category, message in messages %}
+    <div class="flash {{ category }}" id="flash-{{ loop.index }}">
+      <span class="flash-content">{{ message }}</span>
+      <button class="flash-close" onclick="closeFlash('flash-{{ loop.index }}')"
+        aria-label="Close message">&times;</button>
+    </div>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer>
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-section">
+          <h3>My Todo-App</h3>
+          <p style="color: #4b8bcf;">Organize your tasks efficiently and stay productive with our intuitive task
+            management system.</p>
+          <div class="social-links">
+            <a href="#" class="social-link" title="GitHub">
+              <span>📱</span>
+            </a>
+            <a href="#" class="social-link" title="LinkedIn">
+              <span>💼</span>
+            </a>
+            <a href="#" class="social-link" title="Email">
+              <span>📧</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="footer-section">
+          <h4>Quick Links</h4>
+          <ul class="footer-links">
+            <li><a href="{{ url_for('tasks.view_task') }}">Home</a></li>
+            {% if 'user' in session %}
+            <li><a href="{{ url_for('auth.logout') }}">Logout</a></li>
+            {% else %}
+            <li><a href="{{ url_for('auth.login') }}">Login</a></li>
+            <li><a href="{{ url_for('auth.register') }}">Register</a></li>
+            {% endif %}
+          </ul>
+        </div>
+
+        <div class="footer-section">
+          <h4>Features</h4>
+          <ul class="footer-links" style="color: #5785c2;">
+            <li>Task Management</li>
+            <li>Status Tracking</li>
+            <li>User Authentication</li>
+            <li>Responsive Design</li>
+          </ul>
+        </div>
+
+        <div class="footer-section">
+          <h4>Contact Info</h4>
+          <div class="contact-info">
+            <p class="contact-info-p" style="color: #5785c2;">📧 support@todoapp.com</p>
+            <p class="contact-info-p" style="color: #5785c2;">📞 +1 (555) 123-4567</p>
+            <p class="contact-info-p" style="color: #5785c2;">📍 123 Task Street, Productivity City</p>
+          </div>
+        </div>
       </div>
-    </footer>
-  </body>
+
+      <div class="footer-bottom">
+        <div class="footer-bottom-content">
+          <p>&copy; 2024 My Todo-App. All rights reserved.</p>
+          <div class="footer-bottom-links">
+            <a href="#">Privacy Policy</a>
+            <a href="#">Terms of Service</a>
+            <a href="#">Cookie Policy</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    function closeFlash(flashId) {
+      const flashElement = document.getElementById(flashId);
+      if (flashElement) {
+        flashElement.style.animation = 'slideOut 0.3s ease-out forwards';
+        setTimeout(() => {
+          flashElement.remove();
+        }, 300);
+      }
+    }
+
+    // Auto-dismiss flash messages after 5 seconds
+    document.addEventListener('DOMContentLoaded', function () {
+      const flashMessages = document.querySelectorAll('.flash');
+      flashMessages.forEach(function (flash) {
+        setTimeout(function () {
+          if (flash.parentNode) {
+            flash.style.animation = 'slideOut 0.3s ease-out forwards';
+            setTimeout(() => {
+              if (flash.parentNode) {
+                flash.remove();
+              }
+            }, 300);
+          }
+        }, 5000);
+      });
+    });
+  </script>
+
+  <style>
+    @keyframes slideOut {
+      from {
+        opacity: 1;
+        transform: translateX(0);
+        max-height: 100px;
+      }
+
+      to {
+        opacity: 0;
+        transform: translateX(20px);
+        max-height: 0;
+        margin: 0;
+        padding: 0;
+      }
+    }
+  </style>
+</body>
+
 </html>
