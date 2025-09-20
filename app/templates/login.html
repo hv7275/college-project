@@ -12,8 +12,34 @@
       <label for="password">Password</label><br />
       <input type="password" name="password" id="password" required /><br />
       <button type="submit" class="btn">Sign In</button>
-      <a href="{{ url_for('auth.register') }}" style="margin-left: 10px; padding-left: 10px; margin-top: 10px; color: #667eea; text-decoration: none;">Need an account? Register</a>
+      <div class="auth-links">
+        <a href="{{ url_for('auth.forgot_password') }}" class="forgot-password-link">Forgot Password?</a>
+        <a href="{{ url_for('auth.register') }}" class="register-link">Need an account? Register</a>
+      </div>
     </div>
   </form>
 </div>
+
+<style>
+.auth-links {
+  margin-top: 15px;
+  text-align: center;
+}
+
+.forgot-password-link,
+.register-link {
+  display: block;
+  margin: 8px 0;
+  color: #667eea;
+  text-decoration: none;
+  font-size: 14px;
+  transition: color 0.3s ease;
+}
+
+.forgot-password-link:hover,
+.register-link:hover {
+  color: #5a67d8;
+  text-decoration: underline;
+}
+</style>
 {% endblock %}

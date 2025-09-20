@@ -122,3 +122,20 @@ class Reminder(db.Model):
 
     def __repr__(self):
         return f"<Reminder for {self.user.username} at {self.remind_at}>"
+
+
+class PasswordResetToken(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    user = db.relationship("User")
+    token = db.Column(db.String(100), unique=True, nullable=False, index=True)
+    expires_at = db.Column(db.DateTime, nullable=False, index=True)
+    used = db.Column(db.Boolean, default=False, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def is_valid(self):
+        """Check if the token is valid (not expired and not used)"""
+        return not self.used and datetime.utcnow() < self.expires_at
+
+    def __repr__(self):
+        return f"<PasswordResetToken for {self.user.username} expires at {self.expires_at}>"

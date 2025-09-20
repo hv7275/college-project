@@ -325,7 +325,7 @@ function openDeleteModal(button) {
     const taskToDelete = document.getElementById('taskToDelete');
     
     // Update the form action with the correct task ID
-    deleteForm.action = deleteForm.action.replace('task_id=0', `task_id=${taskId}`);
+    deleteForm.action = "{{url_for('tasks.clear_task', task_id=0)}}".replace('0', taskId);
     
     // Update the task title in the modal
     taskToDelete.textContent = `"${taskTitle}"`;

@@ -23,6 +23,7 @@ def log_task_history(task, action, details=None):
 @tasks_bp.route('/')
 @login_required
 def view_task():
+    
     tasks = Task.query.filter_by(user_id=current_user.id).order_by(Task.priority.desc(), Task.scheduled_date.asc(), Task.scheduled_time.asc()).all()
     form = TaskForm()
     return render_template('tasks.html', tasks=tasks, form=form)

@@ -107,3 +107,26 @@ class TaskForm(FlaskForm):
     )
     
     submit = SubmitField('Add Task')
+
+
+class ForgotPasswordForm(FlaskForm):
+    email = StringField(
+        'Email',
+        validators=[DataRequired(), Email(), Length(max=150)],
+        render_kw={'placeholder': 'Enter your email address'}
+    )
+    submit = SubmitField('Send Reset Link')
+
+
+class ResetPasswordForm(FlaskForm):
+    password = PasswordField(
+        'New Password',
+        validators=[DataRequired(), Length(min=6, max=100)],
+        render_kw={'placeholder': 'Enter new password'}
+    )
+    confirm_password = PasswordField(
+        'Confirm New Password',
+        validators=[DataRequired(), Length(min=6, max=100), EqualTo('password')],
+        render_kw={'placeholder': 'Confirm new password'}
+    )
+    submit = SubmitField('Reset Password')
