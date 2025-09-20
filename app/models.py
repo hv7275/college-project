@@ -9,6 +9,7 @@ class User(db.Model):
     first_name = db.Column(db.String(150), nullable=False)
     last_name = db.Column(db.String(150), nullable=False)
     email = db.Column(db.String(150), unique=True, nullable=False)
+    phone_no = db.Column(db.String(20), unique=True, nullable=False)
     password_hash = db.Column(db.String(150), nullable=False)
     tasks = db.relationship('Task', backref='owner', lazy=True)
     
@@ -32,7 +33,7 @@ class Task(db.Model):
     def __repr__(self):
         return f"<Task {self.title} - {self.status}>"
     
-class Remainder(db.Model):
+class Reminder(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     message = db.Column(db.String(255))
