@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for, current_app
 from flask_login import login_user, logout_user, login_required, current_user
 from app import db, mail
-from app.models import User, PasswordResetToken
+from app.models import User, PasswordResetToken, EmailVerificationToken
 from app.forms import ForgotPasswordForm, ResetPasswordForm
 from datetime import datetime, timedelta
 import secrets
@@ -18,6 +18,9 @@ def login():
         password = request.form.get('password')
         user = User.query.filter_by(username=username).first()
         if user and user.check_password(password):
+            if not user.email_verified:
+                flash('Please verify your email before logging in. Check your email for verification link.', 'warning')
+                return render_template('login.html')
             login_user(user)
             flash('Login successful', 'success')
             return redirect(url_for('tasks.view_task'))
@@ -58,12 +61,54 @@ def register():
             first_name=first_name,
             last_name=last_name,
             email=email,
-            phone_no=phone_no
+            phone_no=phone_no,
+            email_verified=False
         )
         new_user.set_password(password)
         db.session.add(new_user)
+        db.session.flush()  # Get the user ID
+        
+        # Generate email verification token
+        token = secrets.token_urlsafe(32)
+        expires_at = datetime.utcnow() + timedelta(hours=24)  # 24 hours expiry
+        
+        verification_token = EmailVerificationToken(
+            user_id=new_user.id,
+            token=token,
+            expires_at=expires_at
+        )
+        db.session.add(verification_token)
         db.session.commit()
-        flash('Registration successful, please log in.', 'success')
+        
+        # Send verification email
+        try:
+            verification_url = url_for('auth.verify_email', token=token, _external=True)
+            from flask_mail import Message
+            msg = Message(
+                'Verify Your Email - Task Management System',
+                recipients=[new_user.email],
+                body=f'''
+Hello {new_user.first_name},
+
+Welcome to our Task Management System!
+
+Please verify your email address by clicking the link below:
+{verification_url}
+
+This link will expire in 24 hours.
+
+If you didn't create an account with us, please ignore this email.
+
+Best regards,
+Your Task Management Team
+                '''
+            )
+            mail.send(msg)
+            flash('Registration successful! Please check your email and click the verification link to activate your account.', 'success')
+        except Exception as e:
+            flash(f'Registration successful, but email sending failed. Please contact support for account activation.', 'warning')
+            print(f"Email sending error: {e}")
+        
         return redirect(url_for('auth.login'))
         
     return render_template('register.html')
@@ -167,3 +212,89 @@ def reset_password(token):
         return redirect(url_for('auth.login'))
     
     return render_template('reset_password.html', form=form, token=token)
+
+
+@auth_bp.route('/verify-email/<token>')
+def verify_email(token):
+    if current_user.is_authenticated:
+        return redirect(url_for('tasks.view_task'))
+    
+    # Find the verification token
+    verification_token = EmailVerificationToken.query.filter_by(token=token).first()
+    
+    if not verification_token or not verification_token.is_valid():
+        flash('Invalid or expired verification token.', 'danger')
+        return redirect(url_for('auth.login'))
+    
+    # Mark email as verified
+    user = verification_token.user
+    user.email_verified = True
+    
+    # Mark token as used
+    verification_token.used = True
+    
+    db.session.commit()
+    
+    flash('Your email has been verified successfully! You can now log in.', 'success')
+    return redirect(url_for('auth.login'))
+
+
+@auth_bp.route('/resend-verification', methods=['GET', 'POST'])
+def resend_verification():
+    if current_user.is_authenticated:
+        return redirect(url_for('tasks.view_task'))
+    
+    if request.method == 'POST':
+        email = request.form.get('email')
+        user = User.query.filter_by(email=email).first()
+        
+        if user and not user.email_verified:
+            # Delete any existing verification tokens for this user
+            EmailVerificationToken.query.filter_by(user_id=user.id).delete()
+            
+            # Generate new verification token
+            token = secrets.token_urlsafe(32)
+            expires_at = datetime.utcnow() + timedelta(hours=24)
+            
+            verification_token = EmailVerificationToken(
+                user_id=user.id,
+                token=token,
+                expires_at=expires_at
+            )
+            db.session.add(verification_token)
+            db.session.commit()
+            
+            # Send verification email
+            try:
+                verification_url = url_for('auth.verify_email', token=token, _external=True)
+                from flask_mail import Message
+                msg = Message(
+                    'Verify Your Email - Task Management System',
+                    recipients=[user.email],
+                    body=f'''
+Hello {user.first_name},
+
+You requested a new verification link for your account.
+
+Please verify your email address by clicking the link below:
+{verification_url}
+
+This link will expire in 24 hours.
+
+If you didn't request this, please ignore this email.
+
+Best regards,
+Your Task Management Team
+                    '''
+                )
+                mail.send(msg)
+                flash('Verification email has been sent. Please check your email.', 'success')
+            except Exception as e:
+                flash('Failed to send verification email. Please try again later.', 'danger')
+                print(f"Email sending error: {e}")
+        else:
+            flash('Email not found or already verified.', 'info')
+        
+        return redirect(url_for('auth.login'))
+    
+    return render_template('resend_verification.html')

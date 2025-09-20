@@ -82,81 +82,96 @@ Your Task Management System
         db.session.commit()
 
 def send_periodic_notifications(app):
-    """Send periodic notifications for all pending tasks every minute."""
+    """Send periodic notifications to logged-in users for their own tasks every 5 minutes."""
     from app.models import Task, User  # avoid circular import
     import re
+    from datetime import datetime, timedelta
     
     with app.app_context():
         try:
-            # Get all pending tasks
-            pending_tasks = Task.query.filter(
-                Task.status.in_(['Pending', 'In Progress'])
-            ).all()
+            # Check if we've sent a notification in the last 4 minutes to prevent duplicates
+            last_notification_key = 'last_periodic_notification'
+            last_sent = app.config.get(last_notification_key)
+            now = datetime.utcnow()
             
-            if pending_tasks:
-                # Group tasks by user
-                user_tasks = {}
-                for task in pending_tasks:
-                    if task.user_id not in user_tasks:
-                        user_tasks[task.user_id] = []
-                    user_tasks[task.user_id].append(task)
+            if last_sent and (now - last_sent).total_seconds() < 240:  # 4 minutes
+                print("⏰ Skipping notification - sent recently")
+                return
+            
+            # Get all users who have pending tasks
+            users_with_tasks = User.query.join(Task).filter(
+                Task.status.in_(['Pending', 'In Progress'])
+            ).distinct().all()
+            
+            if not users_with_tasks:
+                print("⚠️ No users with pending tasks found")
+                return
+            
+            sent_count = 0
+            
+            # Send notification to each user for their own tasks
+            for user in users_with_tasks:
+                if not user.email or not user.email.endswith('@gmail.com'):
+                    print(f"⚠️ Skipping {user.username} - no valid Gmail address")
+                    continue
                 
-                # Send notification only to the main user (hv7275384@gmail.com)
-                sent_count = 0
-                main_user = User.query.filter_by(email='hv7275384@gmail.com').first()
+                # Get only this user's pending tasks
+                user_tasks = Task.query.filter(
+                    Task.user_id == user.id,
+                    Task.status.in_(['Pending', 'In Progress'])
+                ).all()
                 
-                if main_user:
-                    # Get all tasks for the main user
-                    all_tasks = []
-                    for user_id, tasks in user_tasks.items():
-                        all_tasks.extend(tasks)
+                if not user_tasks:
+                    print(f"⚠️ No pending tasks for {user.username}")
+                    continue
                 
-                if main_user and all_tasks:
-                    # Create notification email for all tasks
-                    task_list = []
-                    for task in all_tasks:
-                        priority_emoji = {
-                            'Low': '🟢',
-                            'Medium': '🟡', 
-                            'High': '🟠',
-                            'Urgent': '🔴'
-                        }.get(task.priority, '⚪')
-                        
-                        task_list.append(f"""
+                # Create notification email for this user's tasks
+                task_list = []
+                for task in user_tasks:
+                    priority_emoji = {
+                        'Low': '🟢',
+                        'Medium': '🟡', 
+                        'High': '🟠',
+                        'Urgent': '🔴'
+                    }.get(task.priority, '⚪')
+                    
+                    task_list.append(f"""
 {priority_emoji} {task.title} ({task.status})
    📅 Due: {task.scheduled_date.strftime('%B %d, %Y') if task.scheduled_date else 'No date set'}
    ⏰ Time: {task.scheduled_time.strftime('%I:%M %p') if task.scheduled_time else 'No time set'}
    ⏱️ Duration: {f'{task.estimated_duration} minutes' if task.estimated_duration else 'Not estimated'}""")
-                    
-                    email_body = f"""
-Hello {main_user.first_name},
+                
+                email_body = f"""
+Hello {user.first_name},
 
 Here's your current task status update:
 
 {''.join(task_list)}
 
+You have {len(user_tasks)} pending task{'s' if len(user_tasks) != 1 else ''} to work on.
+
 Keep up the great work! 🚀
 
 Best regards,
 Your Task Management System
-                    """.strip()
-                    
-                    try:
-                        msg = Message(
-                            "📋 Daily Task Update",
-                            recipients=[main_user.email],
-                            body=email_body
-                        )
-                        
-                        mail.send(msg)
-                        sent_count = 1
-                        print(f"✅ Sent notification to {main_user.email} for {len(all_tasks)} tasks")
-                    except Exception as email_error:
-                        print(f"❌ Failed to send email to {main_user.email}: {email_error}")
-                else:
-                    print("⚠️ No main user or tasks found")
+                """.strip()
                 
-                print(f"📧 Total notifications sent: {sent_count}")
+                try:
+                    msg = Message(
+                        f"📋 Your Task Update ({len(user_tasks)} tasks)",
+                        recipients=[user.email],
+                        body=email_body
+                    )
+                    
+                    mail.send(msg)
+                    sent_count += 1
+                    print(f"✅ Sent notification to {user.email} for {len(user_tasks)} tasks")
+                except Exception as email_error:
+                    print(f"❌ Failed to send email to {user.email}: {email_error}")
+            
+            # Update last sent timestamp
+            app.config[last_notification_key] = now
+            print(f"📧 Total notifications sent: {sent_count}")
                         
         except Exception as e:
             print(f"Error sending periodic notifications: {e}")
@@ -237,7 +252,7 @@ def create_app():
         id="send_periodic_notifications",
         func=lambda: send_periodic_notifications(app),
         trigger="interval",
-        minutes=5  # Send every 5 minutes instead of every minute
+        minutes=5  # Send every 5 minutes
     )
     scheduler.start()
 

@@ -15,6 +15,7 @@ class User(db.Model, UserMixin):
     email = db.Column(db.String(150), unique=True, nullable=False)
     phone_no = db.Column(db.String(20), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
+    email_verified = db.Column(db.Boolean, default=False, nullable=False)
     tasks = db.relationship('Task', back_populates='owner', lazy=True)
     reminders = db.relationship('Reminder', back_populates='user', lazy=True)
     
@@ -139,3 +140,20 @@ class PasswordResetToken(db.Model):
 
     def __repr__(self):
         return f"<PasswordResetToken for {self.user.username} expires at {self.expires_at}>"
+
+
+class EmailVerificationToken(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    user = db.relationship("User")
+    token = db.Column(db.String(100), unique=True, nullable=False, index=True)
+    expires_at = db.Column(db.DateTime, nullable=False, index=True)
+    used = db.Column(db.Boolean, default=False, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def is_valid(self):
+        """Check if the token is valid (not expired and not used)"""
+        return not self.used and datetime.utcnow() < self.expires_at
+
+    def __repr__(self):
+        return f"<EmailVerificationToken for {self.user.username} expires at {self.expires_at}>"
