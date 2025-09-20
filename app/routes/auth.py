@@ -128,7 +128,8 @@ Your Task Management Team
                 mail.send(msg)
                 flash('Password reset link has been sent to your email.', 'success')
             except Exception as e:
-                flash('Failed to send reset email. Please try again later.', 'danger')
+                # If email fails, show the reset link directly (for development)
+                flash(f'Email sending failed. Please use this link to reset your password: {reset_url}', 'warning')
                 print(f"Email sending error: {e}")
         else:
             # Don't reveal if email exists or not for security

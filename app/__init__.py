@@ -48,10 +48,13 @@ def create_app():
     app.config["WTF_CSRF_TIME_LIMIT"] = int(os.environ.get("WTF_CSRF_TIME_LIMIT", "3600"))
 
     # Database configuration
-    app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
-        "DATABASE_URL",
-        f"sqlite:///{os.path.join(os.path.dirname(__file__), '..', 'instance', 'site.db')}"
-    )
+    database_url = os.environ.get("DATABASE_URL", "").strip()
+    if database_url and database_url != "":
+        app.config["SQLALCHEMY_DATABASE_URI"] = database_url
+    else:
+        # Fallback to absolute path
+        db_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'instance', 'site.db'))
+        app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
     # Mail configuration

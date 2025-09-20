@@ -1,9 +1,9 @@
 from flask import Blueprint, render_template, request, flash, url_for, redirect, session
 from flask_login import login_required, current_user
 from app import db
-from app.models import Task, TaskHistory
+from app.models import Task, TaskHistory, Reminder
 from app.forms import TaskForm
-from datetime import datetime, date, time
+from datetime import datetime, date, time, timedelta
 
 
 tasks_bp = Blueprint("tasks", __name__)
@@ -19,6 +19,51 @@ def log_task_history(task, action, details=None):
     if task:
         history.set_task_data(task)
     db.session.add(history)
+
+def create_task_reminder(task):
+    """Create email reminder for a task based on its scheduled date/time"""
+    if not task.scheduled_date:
+        return  # No reminder if no scheduled date
+    
+    # Calculate reminder time (15 minutes before scheduled time, or at scheduled date if no time)
+    if task.scheduled_time:
+        # Combine date and time
+        scheduled_datetime = datetime.combine(task.scheduled_date, task.scheduled_time)
+        # Set reminder 15 minutes before
+        remind_at = scheduled_datetime - timedelta(minutes=15)
+    else:
+        # If no specific time, remind at 9 AM on the scheduled date
+        remind_at = datetime.combine(task.scheduled_date, time(9, 0))
+    
+    # Only create reminder if it's in the future
+    if remind_at > datetime.utcnow():
+        # Check if reminder already exists for this task
+        existing_reminder = Reminder.query.filter_by(
+            user_id=task.user_id,
+            message=f"Task Reminder: {task.title}"
+        ).filter(
+            Reminder.remind_at.between(remind_at - timedelta(minutes=1), remind_at + timedelta(minutes=1))
+        ).first()
+        
+        if not existing_reminder:
+            reminder = Reminder(
+                user_id=task.user_id,
+                message=f"Task Reminder: {task.title}",
+                remind_at=remind_at
+            )
+            db.session.add(reminder)
+            print(f"Created reminder for task '{task.title}' at {remind_at}")
+
+def update_task_reminder(task):
+    """Update or create reminder for a task when it's edited"""
+    # Delete existing reminders for this task
+    Reminder.query.filter_by(
+        user_id=task.user_id,
+        message=f"Task Reminder: {task.title}"
+    ).delete()
+    
+    # Create new reminder if task has scheduled date
+    create_task_reminder(task)
 
 @tasks_bp.route('/')
 @login_required
@@ -53,6 +98,9 @@ def add_task():
         
         # Log task creation
         log_task_history(new_task, 'created', f'Task "{new_task.title}" created')
+        
+        # Create reminder for the task
+        create_task_reminder(new_task)
         
         db.session.commit()
         flash('Task added successfully', 'success')
@@ -101,6 +149,12 @@ def clear_task(task_id):
     
     # Log task deletion before deleting
     log_task_history(task, 'deleted', f'Task "{task.title}" deleted')
+    
+    # Delete associated reminders
+    Reminder.query.filter_by(
+        user_id=task.user_id,
+        message=f"Task Reminder: {task.title}"
+    ).delete()
     
     db.session.delete(task)
     db.session.commit()
@@ -175,6 +229,9 @@ def edit_task():
     if changes:
         details = f"Updated: {', '.join(changes)}"
         log_task_history(task, 'updated', details)
+    
+    # Update reminder for the task
+    update_task_reminder(task)
     
     db.session.commit()
     flash('Task updated successfully', 'success')
