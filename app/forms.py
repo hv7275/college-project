@@ -130,3 +130,13 @@ class ResetPasswordForm(FlaskForm):
         render_kw={'placeholder': 'Confirm new password'}
     )
     submit = SubmitField('Reset Password')
+
+
+class OTPVerificationForm(FlaskForm):
+    otp_code = StringField(
+        'OTP Code',
+        validators=[DataRequired(), Length(min=6, max=6)],
+        render_kw={'placeholder': 'Enter 6-digit OTP', 'maxlength': '6', 'pattern': '[0-9]{6}'}
+    )
+    submit = SubmitField('Verify OTP')
+    resend_otp = SubmitField('Resend OTP')

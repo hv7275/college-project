@@ -31,19 +31,13 @@ def check_reminders(app):
         ).all()
         for r in due:
             try:
-                # Create a more detailed email for task reminders
                 if "Task Reminder:" in r.message:
-                    # Extract task title from reminder message
                     task_title = r.message.replace("Task Reminder: ", "")
-                    
-                    # Find the task to get more details
                     task = Task.query.filter_by(
                         user_id=r.user_id,
                         title=task_title
                     ).first()
-                    
                     if task:
-                        # Create detailed email body
                         email_body = f"""
 Hello {r.user.first_name},
 
@@ -61,17 +55,14 @@ Please don't forget to work on this task!
 Best regards,
 Your Task Management System
                         """.strip()
-                        
                         msg = Message(
                             f"Task Reminder: {task.title}",
                             recipients=[r.user.email],
                             body=email_body
                         )
                     else:
-                        # Fallback to simple message if task not found
                         msg = Message("Your Reminder", recipients=[r.user.email], body=r.message)
                 else:
-                    # Regular reminder (not task-related)
                     msg = Message("Your Reminder", recipients=[r.user.email], body=r.message)
                 
                 mail.send(msg)
@@ -81,24 +72,22 @@ Your Task Management System
                 print(f"Error sending reminder {r.id}: {e}")
         db.session.commit()
 
+
 def send_periodic_notifications(app):
     """Send periodic notifications to logged-in users for their own tasks every 5 minutes."""
-    from app.models import Task, User  # avoid circular import
-    import re
-    from datetime import datetime, timedelta
+    from app.models import Task, User
+    from datetime import datetime
     
     with app.app_context():
         try:
-            # Check if we've sent a notification in the last 4 minutes to prevent duplicates
             last_notification_key = 'last_periodic_notification'
             last_sent = app.config.get(last_notification_key)
             now = datetime.utcnow()
             
-            if last_sent and (now - last_sent).total_seconds() < 240:  # 4 minutes
+            if last_sent and (now - last_sent).total_seconds() < 240:
                 print("⏰ Skipping notification - sent recently")
                 return
             
-            # Get all users who have pending tasks
             users_with_tasks = User.query.join(Task).filter(
                 Task.status.in_(['Pending', 'In Progress'])
             ).distinct().all()
@@ -108,24 +97,19 @@ def send_periodic_notifications(app):
                 return
             
             sent_count = 0
-            
-            # Send notification to each user for their own tasks
             for user in users_with_tasks:
                 if not user.email or not user.email.endswith('@gmail.com'):
                     print(f"⚠️ Skipping {user.username} - no valid Gmail address")
                     continue
                 
-                # Get only this user's pending tasks
                 user_tasks = Task.query.filter(
                     Task.user_id == user.id,
                     Task.status.in_(['Pending', 'In Progress'])
                 ).all()
                 
                 if not user_tasks:
-                    print(f"⚠️ No pending tasks for {user.username}")
                     continue
                 
-                # Create notification email for this user's tasks
                 task_list = []
                 for task in user_tasks:
                     priority_emoji = {
@@ -162,14 +146,12 @@ Your Task Management System
                         recipients=[user.email],
                         body=email_body
                     )
-                    
                     mail.send(msg)
                     sent_count += 1
                     print(f"✅ Sent notification to {user.email} for {len(user_tasks)} tasks")
                 except Exception as email_error:
                     print(f"❌ Failed to send email to {user.email}: {email_error}")
             
-            # Update last sent timestamp
             app.config[last_notification_key] = now
             print(f"📧 Total notifications sent: {sent_count}")
                         
@@ -177,25 +159,43 @@ Your Task Management System
             print(f"Error sending periodic notifications: {e}")
 
 
+def cleanup_expired_otps(app):
+    """Clean up expired OTPs every 5 minutes."""
+    from app.models import LoginOTP
+    from datetime import datetime
+    
+    with app.app_context():
+        try:
+            now = datetime.utcnow()
+            expired_otps = LoginOTP.query.filter(LoginOTP.expires_at < now).all()
+            
+            if expired_otps:
+                for otp in expired_otps:
+                    db.session.delete(otp)
+                db.session.commit()
+                print(f"🧹 Cleaned up {len(expired_otps)} expired OTPs")
+            else:
+                print("🧹 No expired OTPs to clean up")
+                
+        except Exception as e:
+            print(f"Error cleaning up expired OTPs: {e}")
+
+
 def create_app():
     app = Flask(__name__)
     
-    # Basic Flask configuration
     app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key-change-in-production")
     app.config["WTF_CSRF_ENABLED"] = os.environ.get("WTF_CSRF_ENABLED", "True").lower() == "true"
     app.config["WTF_CSRF_TIME_LIMIT"] = int(os.environ.get("WTF_CSRF_TIME_LIMIT", "3600"))
 
-    # Database configuration
     database_url = os.environ.get("DATABASE_URL", "").strip()
-    if database_url and database_url != "":
+    if database_url:
         app.config["SQLALCHEMY_DATABASE_URI"] = database_url
     else:
-        # Fallback to absolute path
         db_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'instance', 'site.db'))
         app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-    # Mail configuration
     app.config.update(
         MAIL_SERVER=os.environ.get("MAIL_SERVER", "smtp.gmail.com"),
         MAIL_PORT=int(os.environ.get("MAIL_PORT", "587")),
@@ -205,7 +205,6 @@ def create_app():
         MAIL_DEFAULT_SENDER=os.environ.get("MAIL_DEFAULT_SENDER", os.environ.get("MAIL_USERNAME", "noreply@example.com"))
     )
 
-    # Development features
     if os.environ.get("FLASK_ENV") == "development" or os.environ.get("FLASK_DEBUG") == "1":
         app.config["TEMPLATES_AUTO_RELOAD"] = os.environ.get("TEMPLATES_AUTO_RELOAD", "True").lower() == "true"
         app.config["SEND_FILE_MAX_AGE_DEFAULT"] = int(os.environ.get("SEND_FILE_MAX_AGE_DEFAULT", "0"))
@@ -223,7 +222,6 @@ def create_app():
                 response.headers["Expires"] = "0"
             return response
 
-    # Init extensions
     db.init_app(app)
     mail.init_app(app)
     login_manager.init_app(app)
@@ -234,13 +232,13 @@ def create_app():
         from app.models import User
         return User.query.get(int(user_id))
 
-    # Register blueprints
     from app.routes.auth import auth_bp
     from app.routes.tasks import tasks_bp
+    from app.routes.notify import notify_bp   # <-- register new blueprint
     app.register_blueprint(auth_bp)
     app.register_blueprint(tasks_bp)
+    app.register_blueprint(notify_bp)
 
-    # Scheduler config
     scheduler.init_app(app)
     scheduler.add_job(
         id="check_reminders",
@@ -252,7 +250,13 @@ def create_app():
         id="send_periodic_notifications",
         func=lambda: send_periodic_notifications(app),
         trigger="interval",
-        minutes=5  # Send every 5 minutes
+        minutes=5
+    )
+    scheduler.add_job(
+        id="cleanup_expired_otps",
+        func=lambda: cleanup_expired_otps(app),
+        trigger="interval",
+        minutes=5
     )
     scheduler.start()
 

@@ -1,0 +1,326 @@
+{% extends "base.html" %}
+{% block title %}Authentication Pending{% endblock %}
+{% block content %}
+<div class="auth-pending-container">
+  <div class="auth-pending-box">
+    <div class="email-icon">📧</div>
+    <h2>Check Your Email</h2>
+    <p class="auth-info">We've sent you an authentication email to complete your {% if session.get('auth_user_id') and not current_user.is_authenticated %}account activation{% else %}login{% endif %}.</p>
+    
+    <div class="email-details">
+      <h3>What's Next?</h3>
+      <ol class="steps-list">
+        <li>Check your email inbox (and spam folder)</li>
+        <li>Look for an email from "Task Management System"</li>
+        <li>Click the authentication link in the email</li>
+        <li>You'll be automatically logged in and your account will be activated</li>
+      </ol>
+    </div>
+
+    <div class="security-info">
+      <h4>🔒 Security Information</h4>
+      <ul class="security-list">
+        <li>The authentication link expires in 15 minutes</li>
+        <li>Only click the link if you requested this login</li>
+        <li>Never share the authentication link with anyone</li>
+        <li>Contact support if you didn't request this login</li>
+      </ul>
+    </div>
+
+    <div class="help-section">
+      <h4>Need Help?</h4>
+      <div class="help-options">
+        <a href="{{ url_for('auth.login') }}" class="help-link">
+          <span class="help-icon">🔄</span>
+          Try Again
+        </a>
+        <a href="{{ url_for('auth.resend_verification') }}" class="help-link">
+          <span class="help-icon">📧</span>
+          Resend Email
+        </a>
+        <a href="{{ url_for('auth.forgot_password') }}" class="help-link">
+          <span class="help-icon">🔑</span>
+          Forgot Password
+        </a>
+      </div>
+    </div>
+
+    <div class="countdown-section">
+      <p class="countdown-text">This page will automatically refresh in <span id="countdown">60</span> seconds</p>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.auth-pending-container {
+  max-width: 600px;
+  margin: 50px auto;
+  padding: 20px;
+}
+
+.auth-pending-box {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 20px;
+  padding: 40px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  color: white;
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+}
+
+.auth-pending-box::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  z-index: -1;
+}
+
+.email-icon {
+  font-size: 64px;
+  margin-bottom: 20px;
+  animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-10px);
+  }
+  60% {
+    transform: translateY(-5px);
+  }
+}
+
+.auth-pending-box h2 {
+  font-size: 32px;
+  margin-bottom: 15px;
+  font-weight: 700;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.auth-info {
+  font-size: 18px;
+  margin-bottom: 30px;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
+}
+
+.email-details, .security-info {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 15px;
+  padding: 25px;
+  margin-bottom: 25px;
+  backdrop-filter: blur(5px);
+  text-align: left;
+}
+
+.email-details h3, .security-info h4 {
+  color: #4ecdc4;
+  margin-bottom: 15px;
+  font-size: 20px;
+  text-align: center;
+}
+
+.steps-list, .security-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.steps-list li, .security-list li {
+  padding: 8px 0;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 14px;
+  position: relative;
+  padding-left: 25px;
+}
+
+.steps-list li::before {
+  content: counter(step-counter);
+  counter-increment: step-counter;
+  position: absolute;
+  left: 0;
+  top: 8px;
+  background: #4ecdc4;
+  color: white;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.steps-list {
+  counter-reset: step-counter;
+}
+
+.security-list li::before {
+  content: '🔒';
+  position: absolute;
+  left: 0;
+  top: 8px;
+}
+
+.help-section {
+  margin-bottom: 30px;
+}
+
+.help-section h4 {
+  color: #4ecdc4;
+  margin-bottom: 20px;
+  font-size: 18px;
+}
+
+.help-options {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.help-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  text-decoration: none;
+  border-radius: 10px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.help-link:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+  color: white;
+  text-decoration: none;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.help-icon {
+  font-size: 16px;
+}
+
+.countdown-section {
+  background: rgba(255, 193, 7, 0.2);
+  border-radius: 15px;
+  padding: 20px;
+  border: 2px solid rgba(255, 193, 7, 0.3);
+}
+
+.countdown-text {
+  color: #ffc107;
+  font-weight: 600;
+  margin-bottom: 15px;
+  font-size: 16px;
+}
+
+#countdown {
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4ecdc4, #44a08d);
+  border-radius: 3px;
+  width: 100%;
+  animation: countdown 60s linear forwards;
+}
+
+@keyframes countdown {
+  from { width: 100%; }
+  to { width: 0%; }
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .auth-pending-container {
+    margin: 20px;
+    padding: 10px;
+  }
+  
+  .auth-pending-box {
+    padding: 30px 20px;
+  }
+  
+  .email-icon {
+    font-size: 48px;
+  }
+  
+  .auth-pending-box h2 {
+    font-size: 24px;
+  }
+  
+  .help-options {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .help-link {
+    width: 100%;
+    max-width: 200px;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .email-details, .security-info {
+    padding: 20px 15px;
+  }
+  
+  .steps-list li, .security-list li {
+    font-size: 13px;
+  }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  let timeLeft = 60;
+  const countdownElement = document.getElementById('countdown');
+  const progressFill = document.getElementById('progressFill');
+  
+  const timer = setInterval(function() {
+    timeLeft--;
+    countdownElement.textContent = timeLeft;
+    
+    if (timeLeft <= 0) {
+      clearInterval(timer);
+      // Optionally redirect to login page
+      // window.location.href = "{{ url_for('auth.login') }}";
+    }
+  }, 1000);
+  
+  // Auto-refresh the page every 60 seconds
+  setTimeout(function() {
+    window.location.reload();
+  }, 60000);
+});
+</script>
+{% endblock %}

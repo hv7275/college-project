@@ -3,6 +3,7 @@
 {% block content %}
 <div class="register-box">
     <h2>Create Account</h2>
+    <p class="register-info">Fill in your details to create an account. You'll receive an authentication email to activate your account.</p>
     <form method="POST" action="{{ url_for('auth.register') }}">
         <div class="form-group">
             <label for="username">Username</label>
@@ -28,7 +29,142 @@
             <label for="phone_no">Phone Number</label>
             <input type="text" class="form-control" id="phone_no" name="phone_no" required>
         </div>
-        <button type="submit" class="btn btn-primary">Create Account</button>
+        <button type="submit" class="btn btn-primary">Create Account & Send Authentication Email</button>
     </form>
 </div>
+
+<style>
+/* Enhanced registration page styling to match login page */
+.register-box {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 20px;
+  padding: 40px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  max-width: 500px;
+  margin: 50px auto;
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+.register-box::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  z-index: -1;
+}
+
+.register-box h2 {
+  text-align: center;
+  margin-bottom: 15px;
+  font-size: 28px;
+  font-weight: 700;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  letter-spacing: 1px;
+}
+
+.register-info {
+  text-align: center;
+  margin-bottom: 25px;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+  font-weight: 500;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 12px 20px;
+  border-radius: 8px;
+  backdrop-filter: blur(5px);
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.form-control {
+  width: 100%;
+  padding: 12px 15px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: #4ecdc4;
+  box-shadow: 0 0 10px rgba(78, 205, 196, 0.3);
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.form-control::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.btn {
+  width: 100%;
+  padding: 15px 30px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  background: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%);
+  color: white;
+  margin-top: 10px;
+}
+
+.btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+  background: linear-gradient(135deg, #44a08d 0%, #4ecdc4 100%);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .register-box {
+    margin: 20px;
+    padding: 30px 20px;
+  }
+  
+  .register-box h2 {
+    font-size: 24px;
+  }
+  
+  .form-control {
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+  
+  .btn {
+    padding: 12px 20px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .register-info {
+    font-size: 13px;
+    padding: 10px 15px;
+  }
+}
+</style>
 {% endblock %}

@@ -57,6 +57,10 @@
                 <span class="dropdown-icon">🚪</span>
                 <span class="dropdown-text">Logout</span>
               </a>
+              <a href="{{ url_for('auth.delete_account')}}" class="dropdown-link delete-account-link">
+                <span class="dropdown-icon">🗑️</span>
+                <span class="dropdown-text">Delete Account</span>
+              </a>
             </div>
           </div>
           {% else %}
@@ -107,6 +111,10 @@
         <a href="{{ url_for('auth.logout')}}" class="mobile-nav-link logout-link">
           <span class="nav-icon">🚪</span>
           <span class="nav-text">Logout</span>
+        </a>
+        <a href="{{ url_for('auth.delete_account')}}" class="mobile-nav-link delete-account-link">
+          <span class="nav-icon">🗑️</span>
+          <span class="nav-text">Delete Account</span>
         </a>
         {% else %}
         <a href="{{ url_for('auth.login')}}" class="mobile-nav-link">
@@ -296,6 +304,46 @@
   </script>
 
   <style>
+    /* Beautiful gradient background */
+    body {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #f5576c 75%, #4facfe 100%);
+      background-size: 400% 400%;
+      animation: gradientShift 15s ease infinite;
+      min-height: 100vh;
+    }
+
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    /* Ensure content is visible over gradient */
+    .container {
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Delete account link styling */
+    .delete-account-link {
+      color: #ff6b6b !important;
+      transition: all 0.3s ease;
+    }
+
+    .delete-account-link:hover {
+      color: #ff5252 !important;
+      background-color: rgba(255, 107, 107, 0.1) !important;
+    }
+
+    .mobile-nav-link.delete-account-link {
+      color: #ff6b6b !important;
+    }
+
+    .mobile-nav-link.delete-account-link:hover {
+      color: #ff5252 !important;
+      background-color: rgba(255, 107, 107, 0.1) !important;
+    }
+
     @keyframes slideOut {
       from {
         opacity: 1;

@@ -1,0 +1,493 @@
+{% extends "base.html" %}
+{% block title %}Delete Account{% endblock %}
+{% block content %}
+<div class="delete-account-container">
+  <div class="warning-box">
+    <div class="warning-icon">⚠️</div>
+    <h2>Delete Account</h2>
+    <p class="warning-text">This action cannot be undone. All your data will be permanently deleted.</p>
+  </div>
+
+  <div class="account-info">
+    <h3>Account Information</h3>
+    <div class="info-grid">
+      <div class="info-item">
+        <span class="info-label">Username:</span>
+        <span class="info-value">{{ current_user.username }}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Email:</span>
+        <span class="info-value">{{ current_user.email }}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Name:</span>
+        <span class="info-value">{{ current_user.first_name }} {{ current_user.last_name }}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Phone:</span>
+        <span class="info-value">{{ current_user.phone_no }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="data-warning">
+    <h3>⚠️ Data That Will Be Deleted</h3>
+    <ul class="data-list">
+      <li>📋 All your tasks and task history</li>
+      <li>🔔 All reminders and notifications</li>
+      <li>📊 All task statistics and progress</li>
+      <li>🔐 All authentication tokens and OTPs</li>
+      <li>📧 All email verification records</li>
+      <li>👤 Your user profile and settings</li>
+    </ul>
+  </div>
+
+  <form method="POST" class="delete-form">
+    <div class="confirmation-section">
+      <h3>Confirm Deletion</h3>
+      <p class="confirmation-text">To confirm account deletion, please type your username below:</p>
+      
+      <div class="form-group">
+        <label for="username_confirmation">Type your username to confirm:</label>
+        <input 
+          type="text" 
+          id="username_confirmation" 
+          name="username_confirmation" 
+          placeholder="Enter your username"
+          required
+          class="confirmation-input"
+        >
+      </div>
+
+      <div class="checkbox-group">
+        <label class="checkbox-label">
+          <input type="checkbox" id="confirm_deletion" name="confirm_deletion" required>
+          <span class="checkmark"></span>
+          I understand that this action is permanent and cannot be undone
+        </label>
+      </div>
+    </div>
+
+    <div class="button-group">
+      <a href="{{ url_for('tasks.view_task') }}" class="btn btn-cancel">
+        <span class="btn-icon">↩️</span>
+        Cancel
+      </a>
+      <button type="submit" class="btn btn-delete" id="deleteBtn" disabled>
+        <span class="btn-icon">🗑️</span>
+        Delete Account Permanently
+      </button>
+    </div>
+  </form>
+
+  <div class="help-section">
+    <h4>Need Help?</h4>
+    <p>If you're having issues with your account, consider these alternatives:</p>
+    <ul class="help-list">
+      <li><a href="{{ url_for('auth.forgot_password') }}">Reset your password</a></li>
+      <li><a href="{{ url_for('auth.resend_verification') }}">Resend email verification</a></li>
+      <li>Contact support for assistance</li>
+    </ul>
+  </div>
+</div>
+
+<style>
+.delete-account-container {
+  max-width: 800px;
+  margin: 50px auto;
+  padding: 40px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 20px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+.delete-account-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  z-index: -1;
+}
+
+.warning-box {
+  text-align: center;
+  margin-bottom: 30px;
+  padding: 30px;
+  background: rgba(255, 107, 107, 0.2);
+  border-radius: 15px;
+  border: 2px solid rgba(255, 107, 107, 0.3);
+}
+
+.warning-icon {
+  font-size: 48px;
+  margin-bottom: 15px;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+.warning-box h2 {
+  color: #ff6b6b;
+  font-size: 28px;
+  margin-bottom: 10px;
+  font-weight: 700;
+}
+
+.warning-text {
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
+}
+
+.account-info {
+  margin-bottom: 30px;
+  padding: 25px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 15px;
+  backdrop-filter: blur(5px);
+}
+
+.account-info h3 {
+  color: #4ecdc4;
+  margin-bottom: 20px;
+  font-size: 20px;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 15px;
+}
+
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 15px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  border-left: 4px solid #4ecdc4;
+}
+
+.info-label {
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.info-value {
+  color: white;
+  font-weight: 500;
+}
+
+.data-warning {
+  margin-bottom: 30px;
+  padding: 25px;
+  background: rgba(255, 193, 7, 0.2);
+  border-radius: 15px;
+  border: 2px solid rgba(255, 193, 7, 0.3);
+}
+
+.data-warning h3 {
+  color: #ffc107;
+  margin-bottom: 15px;
+  font-size: 18px;
+}
+
+.data-list {
+  list-style: none;
+  padding: 0;
+}
+
+.data-list li {
+  padding: 8px 0;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 14px;
+}
+
+.delete-form {
+  margin-bottom: 30px;
+}
+
+.confirmation-section {
+  padding: 25px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 15px;
+  margin-bottom: 25px;
+}
+
+.confirmation-section h3 {
+  color: #4ecdc4;
+  margin-bottom: 15px;
+  font-size: 18px;
+}
+
+.confirmation-text {
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.confirmation-input {
+  width: 100%;
+  padding: 12px 15px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  font-size: 16px;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+}
+
+.confirmation-input:focus {
+  outline: none;
+  border-color: #4ecdc4;
+  box-shadow: 0 0 10px rgba(78, 205, 196, 0.3);
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.confirmation-input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.checkbox-group {
+  margin-top: 20px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.checkbox-label input[type="checkbox"] {
+  display: none;
+}
+
+.checkmark {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  border-radius: 4px;
+  margin-right: 12px;
+  position: relative;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+.checkbox-label input[type="checkbox"]:checked + .checkmark {
+  background: #4ecdc4;
+  border-color: #4ecdc4;
+}
+
+.checkbox-label input[type="checkbox"]:checked + .checkmark::after {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-weight: bold;
+  font-size: 12px;
+}
+
+.button-group {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.btn {
+  padding: 15px 30px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+.btn-cancel {
+  background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+  color: white;
+}
+
+.btn-cancel:hover {
+  background: linear-gradient(135deg, #5a6268 0%, #6c757d 100%);
+  color: white;
+  text-decoration: none;
+}
+
+.btn-delete {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+  color: white;
+}
+
+.btn-delete:hover {
+  background: linear-gradient(135deg, #ee5a52 0%, #ff6b6b 100%);
+}
+
+.btn-delete:disabled {
+  background: rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.5);
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.help-section {
+  padding: 25px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 15px;
+  text-align: center;
+}
+
+.help-section h4 {
+  color: #4ecdc4;
+  margin-bottom: 15px;
+  font-size: 18px;
+}
+
+.help-section p {
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 15px;
+  font-size: 14px;
+}
+
+.help-list {
+  list-style: none;
+  padding: 0;
+}
+
+.help-list li {
+  margin: 8px 0;
+}
+
+.help-list a {
+  color: #4ecdc4;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+.help-list a:hover {
+  color: #44a08d;
+  text-decoration: underline;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .delete-account-container {
+    margin: 20px;
+    padding: 30px 20px;
+  }
+  
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .button-group {
+    flex-direction: column;
+  }
+  
+  .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .warning-box h2 {
+    font-size: 24px;
+  }
+  
+  .warning-icon {
+    font-size: 36px;
+  }
+  
+  .btn {
+    padding: 12px 20px;
+    font-size: 14px;
+  }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const usernameInput = document.getElementById('username_confirmation');
+  const confirmCheckbox = document.getElementById('confirm_deletion');
+  const deleteBtn = document.getElementById('deleteBtn');
+  const expectedUsername = '{{ current_user.username }}';
+
+  function validateForm() {
+    const usernameMatch = usernameInput.value.trim() === expectedUsername;
+    const checkboxChecked = confirmCheckbox.checked;
+    
+    deleteBtn.disabled = !(usernameMatch && checkboxChecked);
+    
+    if (usernameMatch && checkboxChecked) {
+      deleteBtn.style.background = 'linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%)';
+    } else {
+      deleteBtn.style.background = 'rgba(255, 255, 255, 0.2)';
+    }
+  }
+
+  usernameInput.addEventListener('input', validateForm);
+  confirmCheckbox.addEventListener('change', validateForm);
+
+  // Add confirmation dialog before form submission
+  document.querySelector('.delete-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const confirmed = confirm(
+      '⚠️ FINAL WARNING ⚠️\n\n' +
+      'You are about to permanently delete your account and ALL associated data.\n\n' +
+      'This action CANNOT be undone!\n\n' +
+      'Are you absolutely sure you want to continue?'
+    );
+    
+    if (confirmed) {
+      this.submit();
+    }
+  });
+});
+</script>
+{% endblock %}

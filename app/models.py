@@ -157,3 +157,20 @@ class EmailVerificationToken(db.Model):
 
     def __repr__(self):
         return f"<EmailVerificationToken for {self.user.username} expires at {self.expires_at}>"
+
+
+class LoginOTP(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    user = db.relationship("User")
+    otp_code = db.Column(db.String(6), nullable=False, index=True)
+    expires_at = db.Column(db.DateTime, nullable=False, index=True)
+    used = db.Column(db.Boolean, default=False, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def is_valid(self):
+        """Check if the OTP is valid (not expired and not used)"""
+        return not self.used and datetime.utcnow() < self.expires_at
+
+    def __repr__(self):
+        return f"<LoginOTP for {self.user.username} expires at {self.expires_at}>"
