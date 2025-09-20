@@ -4,6 +4,7 @@ from . import db
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy import Enum
+import json
 
 
 class User(db.Model, UserMixin):
@@ -36,13 +37,76 @@ class Task(db.Model):
         nullable=False,
     )
 
+    # Time and schedule fields
+    scheduled_date = db.Column(db.Date, nullable=True)
+    scheduled_time = db.Column(db.Time, nullable=True)
+    estimated_duration = db.Column(db.Integer, nullable=True)  # in minutes
+    priority = db.Column(
+        Enum("Low", "Medium", "High", "Urgent", name="task_priority"),
+        default="Medium",
+        nullable=False,
+    )
+
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+    updated_at = db.Column(db.DateTime, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
 
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True)
     owner = db.relationship("User", back_populates="tasks")
+    history = db.relationship('TaskHistory', back_populates='task', lazy=True, cascade='all, delete-orphan')
 
     def __repr__(self):
         return f"<Task {self.title} [{self.status}]>"
+
+
+class TaskHistory(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    
+    # Task reference (nullable for deleted tasks)
+    task_id = db.Column(db.Integer, db.ForeignKey("task.id"), nullable=True)
+    task = db.relationship("Task", back_populates="history")
+    
+    # User who performed the action
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    user = db.relationship("User")
+    
+    # Action type: 'created', 'updated', 'deleted', 'status_changed'
+    action = db.Column(
+        Enum("created", "updated", "deleted", "status_changed", name="task_action"),
+        nullable=False
+    )
+    
+    # Task data at the time of action (JSON format)
+    task_data = db.Column(db.Text, nullable=True)  # JSON string of task data
+    
+    # Additional details for the action
+    details = db.Column(db.String(500), nullable=True)  # e.g., "Status changed from Pending to In Progress"
+    
+    # Timestamp
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    
+    def set_task_data(self, task_obj):
+        """Store task data as JSON"""
+        if task_obj:
+            data = {
+                'title': task_obj.title,
+                'status': task_obj.status,
+                'priority': task_obj.priority,
+                'scheduled_date': task_obj.scheduled_date.isoformat() if task_obj.scheduled_date else None,
+                'scheduled_time': task_obj.scheduled_time.isoformat() if task_obj.scheduled_time else None,
+                'estimated_duration': task_obj.estimated_duration,
+                'created_at': task_obj.created_at.isoformat() if task_obj.created_at else None,
+                'updated_at': task_obj.updated_at.isoformat() if task_obj.updated_at else None
+            }
+            self.task_data = json.dumps(data)
+    
+    def get_task_data(self):
+        """Retrieve task data from JSON"""
+        if self.task_data:
+            return json.loads(self.task_data)
+        return None
+    
+    def __repr__(self):
+        return f"<TaskHistory {self.action} by {self.user.username} at {self.created_at}>"
 
 
 class Reminder(db.Model):

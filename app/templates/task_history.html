@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+{% block title %}Task History{% endblock %}
+
+{% block content %}
+<div class="history-box">
+    <div class="history-header">
+        <h2>📋 Task History</h2>
+        <p class="history-subtitle">Track all your task activities and changes</p>
+    </div>
+
+    {% if history %}
+    <div class="history-filters">
+        <div class="filter-group">
+            <label for="actionFilter">Filter by Action:</label>
+            <select id="actionFilter" onchange="filterHistory()">
+                <option value="all">All Actions</option>
+                <option value="created">Created</option>
+                <option value="updated">Updated</option>
+                <option value="deleted">Deleted</option>
+                <option value="status_changed">Status Changed</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label for="searchFilter">Search:</label>
+            <input type="text" id="searchFilter" placeholder="Search in details..." onkeyup="filterHistory()">
+        </div>
+    </div>
+
+    <div class="history-timeline">
+        {% for entry in history %}
+        <div class="history-item" data-action="{{ entry.action }}">
+            <div class="history-timeline-marker">
+                <div class="timeline-dot action-{{ entry.action }}"></div>
+            </div>
+            <div class="history-content">
+                <div class="history-header-info">
+                    <div class="history-action">
+                        <span class="action-icon action-{{ entry.action }}">
+                            {% if entry.action == 'created' %}➕
+                            {% elif entry.action == 'updated' %}✏️
+                            {% elif entry.action == 'deleted' %}🗑️
+                            {% elif entry.action == 'status_changed' %}🔄
+                            {% endif %}
+                        </span>
+                        <span class="action-text">{{ entry.action.replace('_', ' ').title() }}</span>
+                    </div>
+                    <div class="history-time">
+                        <span class="time-ago" data-time="{{ entry.created_at.isoformat() }}"></span>
+                    </div>
+                </div>
+                
+                <div class="history-details">
+                    <p class="history-description">{{ entry.details or 'No additional details' }}</p>
+                    
+                    {% if entry.task_data %}
+                    <div class="task-data-summary">
+                        {% set task_data = entry.get_task_data() %}
+                        <div class="task-info-grid">
+                            <div class="task-info-item">
+                                <span class="info-label">Title:</span>
+                                <span class="info-value">{{ task_data.title }}</span>
+                            </div>
+                            <div class="task-info-item">
+                                <span class="info-label">Status:</span>
+                                <span class="info-value status-{{ task_data.status|lower|replace(' ', '-') }}">{{ task_data.status }}</span>
+                            </div>
+                            <div class="task-info-item">
+                                <span class="info-label">Priority:</span>
+                                <span class="info-value priority-{{ task_data.priority|lower }}">{{ task_data.priority }}</span>
+                            </div>
+                            {% if task_data.scheduled_date %}
+                            <div class="task-info-item">
+                                <span class="info-label">Date:</span>
+                                <span class="info-value">{{ task_data.scheduled_date }}</span>
+                            </div>
+                            {% endif %}
+                            {% if task_data.scheduled_time %}
+                            <div class="task-info-item">
+                                <span class="info-label">Time:</span>
+                                <span class="info-value">{{ task_data.scheduled_time }}</span>
+                            </div>
+                            {% endif %}
+                            {% if task_data.estimated_duration %}
+                            <div class="task-info-item">
+                                <span class="info-label">Duration:</span>
+                                <span class="info-value">{{ task_data.estimated_duration }} min</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-history">
+        <div class="empty-icon">📝</div>
+        <h3>No History Yet</h3>
+        <p>Your task history will appear here once you start creating, updating, or deleting tasks.</p>
+        <a href="{{ url_for('tasks.view_task') }}" class="btn btn-primary">Create Your First Task</a>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+// Filter history items
+function filterHistory() {
+    const actionFilter = document.getElementById('actionFilter').value;
+    const searchFilter = document.getElementById('searchFilter').value.toLowerCase();
+    const historyItems = document.querySelectorAll('.history-item');
+    
+    historyItems.forEach(item => {
+        const action = item.getAttribute('data-action');
+        const details = item.querySelector('.history-description').textContent.toLowerCase();
+        
+        const actionMatch = actionFilter === 'all' || action === actionFilter;
+        const searchMatch = searchFilter === '' || details.includes(searchFilter);
+        
+        if (actionMatch && searchMatch) {
+            item.style.display = 'flex';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+}
+
+// Format relative time
+function formatTimeAgo(dateString) {
+    const now = new Date();
+    const date = new Date(dateString);
+    const diffInSeconds = Math.floor((now - date) / 1000);
+    
+    if (diffInSeconds < 60) {
+        return 'Just now';
+    } else if (diffInSeconds < 3600) {
+        const minutes = Math.floor(diffInSeconds / 60);
+        return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+    } else if (diffInSeconds < 86400) {
+        const hours = Math.floor(diffInSeconds / 3600);
+        return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+    } else if (diffInSeconds < 2592000) {
+        const days = Math.floor(diffInSeconds / 86400);
+        return `${days} day${days > 1 ? 's' : ''} ago`;
+    } else {
+        return date.toLocaleDateString();
+    }
+}
+
+// Update all time displays
+document.addEventListener('DOMContentLoaded', function() {
+    const timeElements = document.querySelectorAll('.time-ago');
+    timeElements.forEach(element => {
+        const timeString = element.getAttribute('data-time');
+        element.textContent = formatTimeAgo(timeString);
+    });
+    
+    // Update time every minute
+    setInterval(function() {
+        timeElements.forEach(element => {
+            const timeString = element.getAttribute('data-time');
+            element.textContent = formatTimeAgo(timeString);
+        });
+    }, 60000);
+});
+</script>
+{% endblock %}

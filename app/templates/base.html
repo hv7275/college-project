@@ -10,18 +10,115 @@
 </head>
 
 <body>
-  <header>
-    <div class="container">
-      <h1><a href="{{ url_for('tasks.view_task')}}">My Todo-App</a></h1>
-      <nav>
-        <a href="{{ url_for('tasks.view_task')}}">Home</a>
-        {% if 'user' in session %}
-        <a href="{{ url_for('auth.logout')}}">Logout</a>
-        {% else %}
-        <a href="{{ url_for('auth.login')}}">Login</a>
-        <a href="{{ url_for('auth.register')}}">Register</a>
-        {% endif %}
+  <header class="navbar">
+    <div class="navbar-container">
+      <div class="navbar-brand">
+        <a href="{{ url_for('tasks.view_task')}}" class="brand-link">
+          <span class="brand-icon">📝</span>
+          <span class="brand-text">My Todo-App</span>
+        </a>
+      </div>
+      
+      <nav class="navbar-nav">
+        <div class="nav-links">
+          <a href="{{ url_for('tasks.view_task')}}" class="nav-link">
+            <span class="nav-icon">🏠</span>
+            <span class="nav-text">Home</span>
+          </a>
+          {% if current_user.is_authenticated %}
+          <a href="{{ url_for('tasks.view_task')}}" class="nav-link">
+            <span class="nav-icon">📋</span>
+            <span class="nav-text">Tasks</span>
+          </a>
+          <a href="{{ url_for('tasks.task_history')}}" class="nav-link">
+            <span class="nav-icon">📊</span>
+            <span class="nav-text">History</span>
+          </a>
+          {% endif %}
+        </div>
+        
+        <div class="nav-auth">
+          {% if current_user.is_authenticated %}
+          <div class="user-menu">
+            <button class="user-toggle" onclick="toggleUserMenu()">
+              <span class="user-avatar">{{ current_user.first_name[0] if current_user.first_name else current_user.username[0] }}</span>
+              <span class="user-name">{{ current_user.first_name or current_user.username }}</span>
+              <span class="dropdown-arrow">▼</span>
+            </button>
+            <div class="user-dropdown" id="userDropdown">
+              <div class="user-info">
+                <div class="user-details">
+                  <div class="user-full-name">{{ current_user.first_name }} {{ current_user.last_name }}</div>
+                  <div class="user-email">{{ current_user.email }}</div>
+                </div>
+              </div>
+              <div class="dropdown-divider"></div>
+              <a href="{{ url_for('auth.logout')}}" class="dropdown-link logout-link">
+                <span class="dropdown-icon">🚪</span>
+                <span class="dropdown-text">Logout</span>
+              </a>
+            </div>
+          </div>
+          {% else %}
+          <div class="auth-links">
+            <a href="{{ url_for('auth.login')}}" class="nav-link auth-link">
+              <span class="nav-icon">🔑</span>
+              <span class="nav-text">Login</span>
+            </a>
+            <a href="{{ url_for('auth.register')}}" class="nav-link auth-link register-link">
+              <span class="nav-icon">📝</span>
+              <span class="nav-text">Register</span>
+            </a>
+          </div>
+          {% endif %}
+        </div>
       </nav>
+      
+      <button class="mobile-menu-toggle" onclick="toggleMobileMenu()" aria-label="Toggle mobile menu">
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+      </button>
+    </div>
+    
+    <!-- Mobile Menu -->
+    <div class="mobile-menu" id="mobileMenu">
+      <div class="mobile-menu-content">
+        <a href="{{ url_for('tasks.view_task')}}" class="mobile-nav-link">
+          <span class="nav-icon">🏠</span>
+          <span class="nav-text">Home</span>
+        </a>
+        {% if current_user.is_authenticated %}
+        <a href="{{ url_for('tasks.view_task')}}" class="mobile-nav-link">
+          <span class="nav-icon">📋</span>
+          <span class="nav-text">Tasks</span>
+        </a>
+        <a href="{{ url_for('tasks.task_history')}}" class="mobile-nav-link">
+          <span class="nav-icon">📊</span>
+          <span class="nav-text">History</span>
+        </a>
+        <div class="mobile-user-info">
+          <div class="mobile-user-avatar">{{ current_user.first_name[0] if current_user.first_name else current_user.username[0] }}</div>
+          <div class="mobile-user-details">
+            <div class="mobile-user-name">{{ current_user.first_name or current_user.username }}</div>
+            <div class="mobile-user-email">{{ current_user.email }}</div>
+          </div>
+        </div>
+        <a href="{{ url_for('auth.logout')}}" class="mobile-nav-link logout-link">
+          <span class="nav-icon">🚪</span>
+          <span class="nav-text">Logout</span>
+        </a>
+        {% else %}
+        <a href="{{ url_for('auth.login')}}" class="mobile-nav-link">
+          <span class="nav-icon">🔑</span>
+          <span class="nav-text">Login</span>
+        </a>
+        <a href="{{ url_for('auth.register')}}" class="mobile-nav-link register-link">
+          <span class="nav-icon">📝</span>
+          <span class="nav-text">Register</span>
+        </a>
+        {% endif %}
+      </div>
     </div>
   </header>
 
@@ -135,6 +232,67 @@
         }, 5000);
       });
     });
+
+    // Mobile menu toggle
+    function toggleMobileMenu() {
+      const mobileMenu = document.getElementById('mobileMenu');
+      const toggleButton = document.querySelector('.mobile-menu-toggle');
+      
+      if (mobileMenu.classList.contains('active')) {
+        mobileMenu.classList.remove('active');
+        toggleButton.classList.remove('active');
+      } else {
+        mobileMenu.classList.add('active');
+        toggleButton.classList.add('active');
+      }
+    }
+
+    // User dropdown toggle
+    function toggleUserMenu() {
+      const userDropdown = document.getElementById('userDropdown');
+      const userToggle = document.querySelector('.user-toggle');
+      
+      if (userDropdown.classList.contains('active')) {
+        userDropdown.classList.remove('active');
+        userToggle.classList.remove('active');
+      } else {
+        userDropdown.classList.add('active');
+        userToggle.classList.add('active');
+      }
+    }
+
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', function(event) {
+      const userDropdown = document.getElementById('userDropdown');
+      const userToggle = document.querySelector('.user-toggle');
+      const mobileMenu = document.getElementById('mobileMenu');
+      const mobileToggle = document.querySelector('.mobile-menu-toggle');
+      
+      // Close user dropdown
+      if (userDropdown && !userToggle.contains(event.target) && !userDropdown.contains(event.target)) {
+        userDropdown.classList.remove('active');
+        userToggle.classList.remove('active');
+      }
+      
+      // Close mobile menu
+      if (mobileMenu && !mobileToggle.contains(event.target) && !mobileMenu.contains(event.target)) {
+        mobileMenu.classList.remove('active');
+        mobileToggle.classList.remove('active');
+      }
+    });
+
+    // Close mobile menu when clicking on a link
+    document.addEventListener('DOMContentLoaded', function() {
+      const mobileNavLinks = document.querySelectorAll('.mobile-nav-link');
+      mobileNavLinks.forEach(link => {
+        link.addEventListener('click', function() {
+          const mobileMenu = document.getElementById('mobileMenu');
+          const toggleButton = document.querySelector('.mobile-menu-toggle');
+          mobileMenu.classList.remove('active');
+          toggleButton.classList.remove('active');
+        });
+      });
+    });
   </script>
 
   <style>
@@ -155,5 +313,4 @@
     }
   </style>
 </body>
-
 </html>

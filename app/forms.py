@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, BooleanField, SubmitField
-from wtforms.validators import DataRequired, Email, Length, EqualTo, ValidationError
+from wtforms import StringField, PasswordField, BooleanField, SubmitField, DateField, TimeField, IntegerField, SelectField
+from wtforms.validators import DataRequired, Email, Length, EqualTo, ValidationError, Optional, NumberRange
 from app.models import User
 
 
@@ -71,3 +71,39 @@ class LoginForm(FlaskForm):
     )
     remember_me = BooleanField('Remember Me')
     submit = SubmitField('Login')
+
+
+class TaskForm(FlaskForm):
+    title = StringField(
+        'Task Title',
+        validators=[DataRequired(), Length(min=1, max=100)],
+        render_kw={'placeholder': 'Enter task title'}
+    )
+    
+    scheduled_date = DateField(
+        'Scheduled Date',
+        validators=[Optional()],
+        render_kw={'class': 'form-control'}
+    )
+    
+    scheduled_time = TimeField(
+        'Scheduled Time',
+        validators=[Optional()],
+        render_kw={'class': 'form-control'}
+    )
+    
+    estimated_duration = IntegerField(
+        'Estimated Duration (minutes)',
+        validators=[Optional(), NumberRange(min=1, max=1440)],
+        render_kw={'placeholder': 'e.g., 30', 'class': 'form-control'}
+    )
+    
+    priority = SelectField(
+        'Priority',
+        choices=[('Low', 'Low'), ('Medium', 'Medium'), ('High', 'High'), ('Urgent', 'Urgent')],
+        default='Medium',
+        validators=[DataRequired()],
+        render_kw={'class': 'form-control'}
+    )
+    
+    submit = SubmitField('Add Task')

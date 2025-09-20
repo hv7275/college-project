@@ -2,46 +2,353 @@
 content %}
 <div class="task-box">
   <h2>Your Tasks</h2>
-  <form action="{{url_for("tasks.add_task")}}" method="POST" class="task-form">
-    <input type="text" name="title" id="title" placeholder="Enter task title" required />
-    <button type="submit">Add Task</button>
+  <!-- Add Task Button -->
+  <div class="add-task-section">
+    <button type="button" class="btn-add-task" onclick="toggleTaskForm()">
+      <span class="btn-icon">+</span>
+      <span class="btn-text">Add New Task</span>
+    </button>
+  </div>
 
+  <!-- Task Form (Hidden by default) -->
+  <form action="{{url_for("tasks.add_task")}}" method="POST" class="task-form" id="taskForm" style="display: none;">
+    {{ form.hidden_tag() }}
+    <div class="form-header">
+      <h3>Create New Task</h3>
+      <button type="button" class="btn-close-form" onclick="toggleTaskForm()">×</button>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label for="title">Task Title</label>
+        {{ form.title(class="form-control", placeholder="Enter task title") }}
+      </div>
+      <div class="form-group">
+        <label for="scheduled_date">Scheduled Date</label>
+        {{ form.scheduled_date(class="form-control") }}
+      </div>
+      <div class="form-group">
+        <label for="scheduled_time">Scheduled Time</label>
+        {{ form.scheduled_time(class="form-control") }}
+      </div>
+      <div class="form-group">
+        <label for="estimated_duration">Duration (minutes)</label>
+        {{ form.estimated_duration(class="form-control", placeholder="e.g., 30") }}
+      </div>
+      <div class="form-group">
+        <label for="priority">Priority</label>
+        {{ form.priority(class="form-control") }}
+      </div>
+    </div>
+    <div class="form-actions">
+      {{ form.submit(class="btn btn-primary") }}
+      <button type="button" class="btn btn-secondary" onclick="toggleTaskForm()">Cancel</button>
+    </div>
   </form>
+
+  <!-- Edit Task Modal -->
+  <div id="editModal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Edit Task</h3>
+        <button type="button" class="btn-close-modal" onclick="closeEditForm()">×</button>
+      </div>
+      <form id="editForm" action="{{url_for('tasks.edit_task')}}" method="POST">
+        <input type="hidden" id="edit_task_id" name="task_id" value="">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="edit_title">Task Title</label>
+            <input type="text" id="edit_title" name="title" class="form-control" placeholder="Enter task title" required>
+          </div>
+          <div class="form-group">
+            <label for="edit_scheduled_date">Scheduled Date</label>
+            <input type="date" id="edit_scheduled_date" name="scheduled_date" class="form-control">
+          </div>
+          <div class="form-group">
+            <label for="edit_scheduled_time">Scheduled Time</label>
+            <input type="time" id="edit_scheduled_time" name="scheduled_time" class="form-control">
+          </div>
+          <div class="form-group">
+            <label for="edit_estimated_duration">Duration (minutes)</label>
+            <input type="number" id="edit_estimated_duration" name="estimated_duration" class="form-control" placeholder="e.g., 30" min="1" max="1440">
+          </div>
+          <div class="form-group">
+            <label for="edit_priority">Priority</label>
+            <select id="edit_priority" name="priority" class="form-control" required>
+              <option value="Low">Low</option>
+              <option value="Medium">Medium</option>
+              <option value="High">High</option>
+              <option value="Urgent">Urgent</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Update Task</button>
+          <button type="button" class="btn btn-secondary" onclick="closeEditForm()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  <div id="deleteModal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Delete Task</h3>
+        <button type="button" class="btn-close-modal" onclick="closeDeleteModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="delete-warning">
+          <div class="warning-icon">⚠️</div>
+          <div class="warning-content">
+            <h4>Are you sure you want to delete this task?</h4>
+            <p class="task-to-delete" id="taskToDelete"></p>
+            <p class="warning-text">This action cannot be undone.</p>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <form id="deleteForm" action="{{url_for('tasks.clear_task', task_id=0)}}" method="POST" style="display: inline;">
+          <button type="submit" class="btn btn-danger">Delete Task</button>
+          <button type="button" class="btn btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
   {% if tasks %}
   <form action="{{url_for('tasks.clear_all_tasks')}}" method='POST' class="clear-task-form">
     <button type="submit" class='btn-btn-clear'>Clear All Tasks</button>
   </form>
 
-  <table class="tasks-table">
-    <thead>
-        <tr>
-            <th>#</th>
-            <th>Task</th>
-            <th>Status</th>
-            <th>Action</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for task in tasks %}
-        <tr>
-          <td>{{loop.index}}</td>
-          <td>{{ task.title }}</td>
-          <td>
-            <span class="badge {{ task.status|lower|replace(' ', '-') }}">{{ task.status }}</span>
-          </td>
-          <td>
-            <form action="{{url_for('tasks.toggle_task')}}" method='POST' style="display: inline;">
-              <input type="hidden" name="task_id" value="{{ task.id }}">
-              <button type="submit" class="btn-small">Next</button>
-            </form>
-          </td>
-          
-        </tr>
-        {% endfor %}
-    </tbody>
-  </table>
+  <div class="tasks-grid">
+    {% for task in tasks %}
+    <div class="task-card priority-{{ task.priority|lower }}">
+      <div class="task-card-header">
+        <span class="task-number">#{{loop.index}}</span>
+        <div class="badge-group">
+          <span class="badge priority-badge priority-{{ task.priority|lower }}">{{ task.priority }}</span>
+          <span class="badge {{ task.status|lower|replace(' ', '-') }}">{{ task.status }}</span>
+        </div>
+      </div>
+      <div class="task-card-body">
+        <h3 class="task-title">{{ task.title }}</h3>
+        <div class="task-details">
+          {% if task.scheduled_date %}
+          <div class="task-detail">
+            <span class="detail-label">📅 Date:</span>
+            <span class="detail-value">{{ task.scheduled_date.strftime('%B %d, %Y') }}</span>
+          </div>
+          {% endif %}
+          {% if task.scheduled_time %}
+          <div class="task-detail">
+            <span class="detail-label">🕐 Time:</span>
+            <span class="detail-value">{{ task.scheduled_time.strftime('%I:%M %p') }}</span>
+          </div>
+          {% endif %}
+          {% if task.estimated_duration %}
+          <div class="task-detail">
+            <span class="detail-label">⏱️ Duration:</span>
+            <span class="detail-value">{{ task.estimated_duration }} min</span>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      <div class="task-card-footer">
+        <div class="task-actions">
+          <button type="button" class="btn-edit" 
+                  data-task-id="{{ task.id }}"
+                  data-title="{{ task.title }}"
+                  data-scheduled-date="{{ task.scheduled_date }}"
+                  data-scheduled-time="{{ task.scheduled_time }}"
+                  data-estimated-duration="{{ task.estimated_duration }}"
+                  data-priority="{{ task.priority }}"
+                  onclick="openEditFormFromButton(this)">
+            <span class="btn-icon">✏️</span>
+            Edit
+          </button>
+          <form action="{{url_for('tasks.toggle_task')}}" method='POST' style="display: inline;">
+            <input type="hidden" name="task_id" value="{{ task.id }}">
+            <button type="submit" class="btn-small">Next</button>
+          </form>
+          <button type="button" class="btn-delete" 
+                  data-task-id="{{ task.id }}"
+                  data-task-title="{{ task.title }}"
+                  onclick="openDeleteModal(this)">
+            <span class="btn-icon">🗑️</span>
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
   {% else %}
   <p>No tasks found.</p>
   {% endif %}
 </div>
+
+<script>
+function toggleTaskForm() {
+    const form = document.getElementById('taskForm');
+    const addButton = document.querySelector('.btn-add-task');
+    
+    if (form.style.display === 'none' || form.style.display === '') {
+        // Show form
+        form.style.display = 'block';
+        addButton.style.display = 'none';
+        
+        // Add smooth animation
+        form.style.opacity = '0';
+        form.style.transform = 'translateY(-20px)';
+        
+        setTimeout(() => {
+            form.style.transition = 'all 0.3s ease';
+            form.style.opacity = '1';
+            form.style.transform = 'translateY(0)';
+        }, 10);
+        
+        // Focus on first input
+        setTimeout(() => {
+            const firstInput = form.querySelector('input[type="text"]');
+            if (firstInput) firstInput.focus();
+        }, 300);
+    } else {
+        // Hide form
+        form.style.transition = 'all 0.3s ease';
+        form.style.opacity = '0';
+        form.style.transform = 'translateY(-20px)';
+        
+        setTimeout(() => {
+            form.style.display = 'none';
+            addButton.style.display = 'flex';
+        }, 300);
+        
+        // Reset form
+        form.reset();
+    }
+}
+
+// Close form when clicking outside
+document.addEventListener('click', function(event) {
+    const form = document.getElementById('taskForm');
+    const addButton = document.querySelector('.btn-add-task');
+    
+    if (form.style.display === 'block' && 
+        !form.contains(event.target) && 
+        !addButton.contains(event.target)) {
+        toggleTaskForm();
+    }
+});
+
+// Edit Task Functions
+function openEditFormFromButton(button) {
+    const modal = document.getElementById('editModal');
+    
+    // Get data from button attributes
+    const taskId = button.getAttribute('data-task-id');
+    const title = button.getAttribute('data-title');
+    const scheduledDate = button.getAttribute('data-scheduled-date');
+    const scheduledTime = button.getAttribute('data-scheduled-time');
+    const estimatedDuration = button.getAttribute('data-estimated-duration');
+    const priority = button.getAttribute('data-priority');
+    
+    // Populate form fields
+    document.getElementById('edit_task_id').value = taskId;
+    document.getElementById('edit_title').value = title;
+    document.getElementById('edit_scheduled_date').value = scheduledDate || '';
+    document.getElementById('edit_scheduled_time').value = scheduledTime || '';
+    document.getElementById('edit_estimated_duration').value = estimatedDuration || '';
+    document.getElementById('edit_priority').value = priority;
+    
+    // Show modal with animation
+    modal.style.display = 'flex';
+    modal.style.opacity = '0';
+    
+    setTimeout(() => {
+        modal.style.transition = 'all 0.3s ease';
+        modal.style.opacity = '1';
+    }, 10);
+    
+    // Focus on first input
+    setTimeout(() => {
+        document.getElementById('edit_title').focus();
+    }, 300);
+}
+
+function closeEditForm() {
+    const modal = document.getElementById('editModal');
+    
+    modal.style.transition = 'all 0.3s ease';
+    modal.style.opacity = '0';
+    
+    setTimeout(() => {
+        modal.style.display = 'none';
+    }, 300);
+}
+
+// Close modal when clicking outside
+document.addEventListener('click', function(event) {
+    const editModal = document.getElementById('editModal');
+    const deleteModal = document.getElementById('deleteModal');
+    
+    if (editModal.style.display === 'flex' && 
+        event.target === editModal) {
+        closeEditForm();
+    }
+    
+    if (deleteModal.style.display === 'flex' && 
+        event.target === deleteModal) {
+        closeDeleteModal();
+    }
+});
+
+// Close modal with Escape key
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        const editModal = document.getElementById('editModal');
+        const deleteModal = document.getElementById('deleteModal');
+        if (editModal.style.display === 'flex') {
+            closeEditForm();
+        }
+        if (deleteModal.style.display === 'flex') {
+            closeDeleteModal();
+        }
+    }
+});
+
+// Delete Task Functions
+function openDeleteModal(button) {
+    const modal = document.getElementById('deleteModal');
+    const taskId = button.getAttribute('data-task-id');
+    const taskTitle = button.getAttribute('data-task-title');
+    const deleteForm = document.getElementById('deleteForm');
+    const taskToDelete = document.getElementById('taskToDelete');
+    
+    // Update the form action with the correct task ID
+    deleteForm.action = deleteForm.action.replace('task_id=0', `task_id=${taskId}`);
+    
+    // Update the task title in the modal
+    taskToDelete.textContent = `"${taskTitle}"`;
+    
+    // Show modal with animation
+    modal.style.display = 'flex';
+    modal.style.opacity = '0';
+    
+    setTimeout(() => {
+        modal.style.transition = 'all 0.3s ease';
+        modal.style.opacity = '1';
+    }, 10);
+}
+
+function closeDeleteModal() {
+    const modal = document.getElementById('deleteModal');
+    
+    modal.style.transition = 'all 0.3s ease';
+    modal.style.opacity = '0';
+    
+    setTimeout(() => {
+        modal.style.display = 'none';
+    }, 300);
+}
+</script>
 {% endblock%}
